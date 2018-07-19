@@ -14,8 +14,21 @@ char buf[10240] = {"00"};
 void show(FILE *fp,Elf64_Shdr Section_header);
 void m_add(FILE *fp,int offset,char *argv[]);
 void m_delete(FILE *fp,int offset,char *key,Elf64_Shdr Section_header);
+
+typedef struct passinfo{
+	char type[20];
+	char name[20];
+	char passwd[30];
+}PASSWDINFO;
+
+
+#define STRUCT
+
 int main(int argc,char *argv[])
 {
+	char *a[3];
+
+	printf("1 %ld  2 %ld  3 %ld\n",strlen(a[1]),sizeof(a[2]),sizeof(a[3]));
          FILE * fp;
          int i;
          Elf64_Ehdr elfheader;
@@ -34,21 +47,22 @@ int main(int argc,char *argv[])
 		while(elfheader.e_shnum--)
 		{
 			fread(&Section_header,sizeof(Elf64_Shdr),1,fp);
-//			printf("read sh_type %lu offset %lx size %lx sh_entsize %lx sh_addralign %lx\n",Section_header.sh_type,Section_header.sh_offset,Section_header.sh_size,Section_header.sh_entsize,Section_header.sh_addralign);
+			printf("read sh_type %lu offset %lx size %lx sh_entsize %lx sh_addralign %lx Section_header.sh_name %lx\n",Section_header.sh_type,Section_header.sh_offset,Section_header.sh_size,Section_header.sh_entsize,Section_header.sh_addralign,Section_header.sh_name);
 
-			if(Section_header.sh_type == 1 && Section_header.sh_name == 0xf8)
+			// if(Section_header.sh_type == 1 && Section_header.sh_name == 0xf8)
+			if(Section_header.sh_type == 1 && Section_header.sh_name == 0xea)
 			//	size += Section_header.sh_size;
 				break;
 		}
-//		printf("size buf %d %d\n",sizeof(buf),strlen(buf));
+		printf("size buf %d %d\n",sizeof(buf),strlen(buf));
 
-//		printf("read section data offset %lx size %lx sh_entsize %lx sh_addralign %lx\n",Section_header.sh_offset,Section_header.sh_size,Section_header.sh_entsize,Section_header.sh_addralign);
+		printf("read section data offset %lx size %lx sh_entsize %lx sh_addralign %lx\n",Section_header.sh_offset,Section_header.sh_size,Section_header.sh_entsize,Section_header.sh_addralign);
 		fseek(fp,Section_header.sh_offset,SEEK_SET);
 		printf("read section data\n");
 		char *p = (char *)malloc(Section_header.sh_size);
 		int count = fread(p,sizeof(char),Section_header.sh_size,fp);
 		int offset =0;
-		for(offset=32;p[offset]!=0;offset++);
+		//for(offset=32;p[offset]!=0;offset++);
 		
 		
 		
@@ -62,7 +76,7 @@ int main(int argc,char *argv[])
 		switch(select)
 		{
 			case 'a':
-				m_add(fp,Section_header.sh_offset + offset,argv);
+				m_add(fp,Section_header.sh_offset + Section_header.sh_addralign,argv);
 				break;
 			case 'd':
 				
@@ -76,9 +90,9 @@ int main(int argc,char *argv[])
 			
 		}
 		
-		for(i=0;i<Section_header.sh_size;i++)
-			printf("%c",p[i]);
-			printf("\n");
+		// for(i=0;i<Section_header.sh_size;i++)
+			// printf("%c",p[i]);
+			// printf("\n");
 		fclose(fp);
 		system("rm a.out");
 		system("cp .ab.out a.out");
@@ -86,7 +100,7 @@ int main(int argc,char *argv[])
 		return 0;
 } 
 
-
+#ifndef STRUCT
 void m_add(FILE *fp,int offset,char *argv[])
 {
 		fseek(fp,offset,SEEK_SET);
@@ -173,3 +187,43 @@ void show(FILE *fp,Elf64_Shdr Section_header)
 		}
 
 }
+#else
+
+void m_add(FILE *fp,int offset,char *argv[])
+{
+	int i = 0;
+	PASSWDINFO m_info;
+	memset(&m_info,0,sizeof(m_info));
+	memcpy(&m_info.type,argv[1],strlen(argv[1]));
+	memcpy(&m_info.name,argv[2],strlen(argv[2]));
+	memcpy(&m_info.passwd,argv[3],strlen(argv[3]));
+
+	fseek(fp,offset,SEEK_SET);
+	
+	fwrite(&m_info,sizeof(m_info),1,fp);
+	printf("1 %ld  2 %ld  3 %ld\n",strlen(argv[1]),strlen(argv[2]),strlen(argv[3]));
+for(i = 0;i<13;i++)
+	printf("%c",argv[1][i]);
+//	fwrite(argv[1],strlen(argv[1]),1,fp);
+
+}
+
+void m_delete(FILE *fp,int offset,char *key,Elf64_Shdr Section_header)
+{
+
+
+
+}
+
+
+void show(FILE *fp,Elf64_Shdr Section_header)
+{
+	PASSWDINFO m_info;
+	fseek(fp,Section_header.sh_offset + Section_header.sh_addralign,SEEK_SET);
+	fread(&m_info,sizeof(m_info),1,fp);
+
+	printf("m_info.type %s  m_info.name %s   m_info.passwd %s \n",m_info.type,m_info.name,m_info.passwd);
+
+}
+
+#endif
