@@ -10,7 +10,7 @@
 #include<stdlib.h>
 #include "/usr/include/elf.h"
 
-char buf[10240] = {"00"};
+int buf[10240] = { 0xffff };
 void show(FILE *fp,Elf64_Shdr Section_header);
 void m_add(FILE *fp,int offset,char *argv[]);
 void m_delete(FILE *fp,int offset,char *key,Elf64_Shdr Section_header);
@@ -62,7 +62,7 @@ int main(int argc,char *argv[])
 		char *p = (char *)malloc(Section_header.sh_size);
 		int count = fread(p,sizeof(char),Section_header.sh_size,fp);
 		int offset =0;
-		//for(offset=32;p[offset]!=0;offset++);
+		for(offset=32;p[offset]!=0;offset++);
 		
 		
 		
@@ -192,16 +192,35 @@ void show(FILE *fp,Elf64_Shdr Section_header)
 void m_add(FILE *fp,int offset,char *argv[])
 {
 	int i = 0;
+	int count = 0;
 	PASSWDINFO m_info;
 	memset(&m_info,0,sizeof(m_info));
 	memcpy(&m_info.type,argv[1],strlen(argv[1]));
 	memcpy(&m_info.name,argv[2],strlen(argv[2]));
 	memcpy(&m_info.passwd,argv[3],strlen(argv[3]));
-
 	fseek(fp,offset,SEEK_SET);
+	fread(&count,sizeof(count),1,fp);
+	if(count == 0xffff)
+	{
+		count = 0;
+		fseek(fp,offset,SEEK_SET);
+		fwrite(&count,sizeof(count),1,fp);
+	}
+	printf("count %d \n",count);
+
+
+
+	fseek(fp,offset + 4 + count * sizeof(m_info),SEEK_SET);
 	
 	fwrite(&m_info,sizeof(m_info),1,fp);
 	printf("1 %ld  2 %ld  3 %ld\n",strlen(argv[1]),strlen(argv[2]),strlen(argv[3]));
+	count ++;
+	fseek(fp,offset,SEEK_SET);
+	fwrite(&count,sizeof(count),1,fp);
+	fseek(fp,offset,SEEK_SET);
+	fread(&count,sizeof(count),1,fp);
+	printf("count %d \n",count);
+
 for(i = 0;i<13;i++)
 	printf("%c",argv[1][i]);
 //	fwrite(argv[1],strlen(argv[1]),1,fp);
